@@ -148,6 +148,7 @@
           </select>
           <button id="mark">標記為看完</button>
           <button id="handout">講義 PDF</button>
+          <button id="hshare" class="primary" hidden>講義匯入 GoodNotes</button>
         </div>
         <div id="msg"></div>
       </div>
@@ -336,6 +337,9 @@ function openEp(e, play) {
   $("ptag").textContent = `${e.subject}・${short(e)}`;
   $("ptitle").textContent = e.topic; $("psum").textContent = e.summary;
   $("handout").hidden = !CAT[e.code].handout;
+  $("hshare").hidden = !(CAT[e.code].handout && CAN_SHARE);
+  hReady = null; $("hshare").textContent = "講義匯入 GoodNotes"; $("hshare").disabled = false;
+  if (CAT[e.code].handout && CAN_SHARE) getHandout(e.code).catch(() => {});   // 先在背景下載，按分享時才不會等
   const p = P(e.code);
   $("mark").textContent = p && p[2] ? "取消看完" : "標記為看完";
   const i = EPS.indexOf(e);
@@ -472,15 +476,51 @@ $("mark").onclick = () => {
   prog.e[cur.code] = [done ? d : 0, d, done ? 1 : 0, Date.now()];
   dirty = true; flush(); renderList(); $("mark").textContent = done ? "取消看完" : "標記為看完";
 };
+// ---------- 講義 ----------
+// iPad / 手機：按「講義匯入 GoodNotes」直接跳出分享選單（選 GoodNotes 就會匯入）
+const CAN_SHARE = (() => {
+  try { return navigator.maxTouchPoints > 1 && !!navigator.canShare && navigator.canShare({ files: [new File(["x"], "t.pdf", { type: "application/pdf" })] }); }
+  catch (e) { return false; }
+})();
+const handoutCache = new Map(), handoutFiles = new Map();
+function getHandout(code) {
+  if (!handoutCache.has(code)) {
+    const p = api("handout", { code }).then(j => { const f = new File([b64ToBuf(j.b64)], j.name || (code + ".pdf"), { type: "application/pdf" }); handoutFiles.set(code, f); return f; });
+    p.catch(() => handoutCache.delete(code));
+    handoutCache.set(code, p);
+  }
+  return handoutCache.get(code);
+}
+let hReady = null;   // 下載完成、等使用者再點一次分享的檔案
+$("hshare").onclick = async () => {
+  if (!cur) return;
+  const code = cur.code, btn = $("hshare");
+  const ready0 = (hReady && hReady.code === code) ? hReady.file : handoutFiles.get(code);
+  if (ready0) {
+    const f = ready0; hReady = null; btn.textContent = "講義匯入 GoodNotes";
+    try { await navigator.share({ files: [f], title: f.name }); $("msg").textContent = ""; }
+    catch (e) { if (e.name !== "AbortError") $("msg").textContent = "分享失敗：" + e.message; }
+    return;
+  }
+  btn.disabled = true; $("msg").textContent = "講義讀取中⋯⋯";
+  try {
+    const f = await getHandout(code);
+    btn.disabled = false;
+    if (cur.code !== code) return;
+    // Safari 規定分享要在點擊當下觸發；下載花太久時請使用者再點一次
+    hReady = { code, file: f }; btn.textContent = "點這裡選 GoodNotes";
+    $("msg").textContent = "講義準備好了，再點一次按鈕，在分享選單選 GoodNotes。";
+  } catch (e) { btn.disabled = false; $("msg").textContent = "講義讀取失敗：" + e.message; }
+};
 $("handout").onclick = async () => {
   if (!cur) return;
   const w = window.open("", "_blank");
   if (w) w.document.write("<p style='font-family:sans-serif'>講義讀取中⋯⋯</p>");
   $("msg").textContent = "講義讀取中⋯⋯";
   try {
-    const j = await api("handout", { code: cur.code });
-    const url = URL.createObjectURL(new Blob([b64ToBuf(j.b64)], { type: "application/pdf" }));
-    if (w) w.location.href = url; else { const a = document.createElement("a"); a.href = url; a.download = j.name; a.click(); }
+    const f = await getHandout(cur.code);
+    const url = URL.createObjectURL(f);
+    if (w) w.location.href = url; else { const a = document.createElement("a"); a.href = url; a.download = f.name; a.click(); }
     $("msg").textContent = "";
   } catch (e) { if (w) w.close(); $("msg").textContent = "講義讀取失敗：" + e.message; }
 };
