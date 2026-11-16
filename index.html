@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>水利技師六科系統課程</title>
+<meta name="theme-color" content="#1F6F8B">
+<script src="config.js"></script>
+<script src="episodes.js"></script>
+<script src="https://accounts.google.com/gsi/client" async></script>
+<style>
+  :root { --teal:#1F6F8B; --teal2:#DCEBF0; --ink:#1E2A33; --gray:#6B7780; --bg:#F7F5EF; --card:#fff; --line:#E2DED2; --done:#3C8D5A; --red:#B5403A; }
+  * { box-sizing:border-box; }
+  [hidden] { display:none !important; }
+  body { margin:0; background:var(--bg); color:var(--ink); font-family:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif; }
+  header { padding:16px 20px 8px; display:flex; justify-content:space-between; align-items:flex-start; gap:12px; flex-wrap:wrap; }
+  header h1 { margin:0; font-size:22px; }
+  header .sub { color:var(--gray); font-size:14px; margin-top:4px; }
+  header .acct { display:flex; gap:8px; align-items:center; font-size:13px; color:var(--gray); }
+  .wrap { display:grid; grid-template-columns:minmax(0,1fr) 360px; gap:18px; padding:0 20px 32px; align-items:start; }
+  @media (max-width:900px) { .wrap { grid-template-columns:1fr; padding:0 12px 24px; } header { padding:14px 12px 8px; } }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; }
+  button, a.btn, select, input { font:inherit; font-size:14px; }
+  button, a.btn, select { padding:8px 12px; border-radius:8px; border:1px solid var(--teal); background:#fff; color:var(--teal); cursor:pointer; text-decoration:none; }
+  button.primary { background:var(--teal); color:#fff; }
+  button.link { border:none; padding:4px 6px; background:none; color:var(--gray); text-decoration:underline; }
+  button:disabled { opacity:.45; cursor:default; }
+  #resume { padding:14px 16px; display:flex; gap:12px; align-items:center; justify-content:space-between; margin-bottom:14px; }
+  #resume small { display:block; color:var(--gray); font-size:13px; margin-top:2px; }
+  #player { padding:14px; }
+  #player .tag { color:var(--teal); font-size:13px; font-weight:700; }
+  #player h2 { font-size:20px; margin:4px 0 2px; }
+  #player .sum { color:var(--gray); font-size:14px; margin:0 0 10px; }
+  .vbox { position:relative; }
+  video { width:100%; border-radius:8px; background:#000; display:block; aspect-ratio:16/9; }
+  #loading { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; color:#fff; background:rgba(0,0,0,.55); border-radius:8px; font-size:15px; gap:10px; pointer-events:none; }
+  #loading .pbar { width:60%; height:6px; background:rgba(255,255,255,.25); border-radius:3px; overflow:hidden; }
+  #loading .pbar i { display:block; height:100%; width:0; background:#fff; transition:width .3s; }
+  .ctrl { display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; align-items:center; }
+  #msg { color:var(--gray); font-size:13px; min-height:18px; margin-top:6px; }
+  .empty { padding:40px 16px; text-align:center; color:var(--gray); }
+  aside { max-height:calc(100vh - 90px); overflow:auto; position:sticky; top:12px; }
+  @media (max-width:900px) { aside { max-height:none; position:static; } }
+  .subj { border-bottom:1px solid var(--line); }
+  .subj:last-of-type { border-bottom:none; }
+  .subj > button { width:100%; display:flex; justify-content:space-between; align-items:center; border:none; border-radius:0; background:transparent; color:var(--ink); padding:12px 14px; font-weight:700; font-size:15px; }
+  .subj > button span.cnt { color:var(--gray); font-weight:400; font-size:13px; }
+  .eps { display:none; padding:0 6px 8px; }
+  .subj.open .eps { display:block; }
+  .ep { display:block; width:100%; text-align:left; border:none; border-radius:8px; background:transparent; color:var(--ink); padding:8px 10px; font-size:14px; }
+  .ep:hover:not(:disabled) { background:var(--teal2); }
+  .ep.cur { background:var(--teal2); }
+  .ep:disabled { color:#A6ADB3; }
+  .ep .row { display:flex; justify-content:space-between; gap:8px; }
+  .ep .code { color:var(--gray); font-size:12px; margin-right:6px; }
+  .ep .st { font-size:12px; color:var(--gray); white-space:nowrap; }
+  .ep .st.done { color:var(--done); font-weight:700; }
+  .bar { height:3px; background:#EEE9DC; border-radius:2px; margin-top:5px; overflow:hidden; }
+  .bar i { display:block; height:100%; background:var(--teal); }
+  .note { color:var(--gray); font-size:12px; padding:8px 14px 12px; }
+  /* 登入 */
+  #login { position:fixed; inset:0; background:var(--bg); z-index:100; display:flex; align-items:center; justify-content:center; padding:20px; }
+  #login .box { max-width:380px; width:100%; text-align:center; padding:28px 22px; }
+  #login h2 { margin:0 0 6px; font-size:20px; }
+  #login p { color:var(--gray); font-size:14px; margin:6px 0 18px; line-height:1.6; }
+  #gbtn { display:flex; justify-content:center; min-height:44px; }
+  #loginMsg { color:var(--red); font-size:14px; margin-top:14px; min-height:20px; }
+  /* 管理 */
+  #admin { position:fixed; inset:0; background:rgba(0,0,0,.35); z-index:60; display:flex; align-items:center; justify-content:center; padding:16px; }
+  #admin .box { max-width:560px; width:100%; max-height:90vh; overflow:auto; padding:18px; }
+  #admin h3 { margin:0 0 10px; }
+  #admin table { width:100%; border-collapse:collapse; font-size:14px; margin:10px 0; }
+  #admin td, #admin th { border-bottom:1px solid var(--line); padding:6px 4px; text-align:left; }
+  #admin .add { display:flex; gap:6px; flex-wrap:wrap; }
+  #admin input { padding:8px; border:1px solid var(--line); border-radius:8px; flex:1; min-width:160px; }
+  /* 大畫面 */
+  .theater #player { position:fixed; inset:0; z-index:50; border-radius:0; border:none; background:#000; padding:0; display:flex; flex-direction:column; }
+  .theater #pbody { flex:1; display:flex; flex-direction:column; min-height:0; }
+  .theater #player .tag, .theater #player h2, .theater #player .sum, .theater #msg { display:none; }
+  .theater .vbox { flex:1; min-height:0; display:flex; }
+  .theater video { flex:1; width:100%; height:100%; aspect-ratio:auto; border-radius:0; object-fit:contain; }
+  .theater .ctrl { margin:0; padding:8px 10px; background:#111; justify-content:center; }
+  .theater .ctrl button, .theater .ctrl select { background:#222; color:#eee; border-color:#444; }
+  body.theater { overflow:hidden; }
+</style>
+</head>
+<body>
+<div id="login" hidden>
+  <div class="card box">
+    <h2>水利技師六科系統課程</h2>
+    <p>請用 Google 帳號登入。<br>只有課程管理者加入名單的帳號可以觀看。</p>
+    <div id="gbtn"></div>
+    <div id="loginMsg"></div>
+  </div>
+</div>
+
+<header>
+  <div>
+    <h1>水利技師六科系統課程</h1>
+    <div class="sub" id="stat">載入中⋯⋯</div>
+  </div>
+  <div class="acct"><span id="who"></span><button class="link" id="adminBtn" hidden>管理名單</button><button class="link" id="logout" hidden>登出</button></div>
+</header>
+<div class="wrap">
+  <main>
+    <div class="card" id="resume" hidden>
+      <div id="resumeText"></div>
+      <button class="primary" id="resumeBtn">繼續觀看</button>
+    </div>
+    <div class="card" id="player">
+      <div class="empty" id="empty">從右邊（手機在下方）的課程清單點一集開始看。</div>
+      <div id="pbody" hidden>
+        <div class="tag" id="ptag"></div>
+        <h2 id="ptitle"></h2>
+        <p class="sum" id="psum"></p>
+        <div class="vbox">
+          <video id="vid" controls playsinline preload="auto"></video>
+          <div id="loading" hidden><span id="ltext">讀取影片中⋯⋯</span><div class="pbar"><i id="lbar"></i></div></div>
+        </div>
+        <div class="ctrl">
+          <button id="fs" class="primary">全螢幕</button>
+          <button id="prev">上一集</button>
+          <button id="next">下一集</button>
+          <select id="speed" aria-label="播放速度">
+            <option value="0.75">0.75 倍</option><option value="1" selected>1 倍</option>
+            <option value="1.25">1.25 倍</option><option value="1.5">1.5 倍</option><option value="2">2 倍</option>
+          </select>
+          <button id="mark">標記為看完</button>
+          <button id="handout">講義 PDF</button>
+        </div>
+        <div id="msg"></div>
+      </div>
+    </div>
+  </main>
+  <aside class="card" id="list"></aside>
+</div>
+
+<div id="admin" hidden>
+  <div class="card box">
+    <h3>觀看名單</h3>
+    <div class="note" style="padding:0">加入名單的 Google 帳號才能登入觀看。「管理」可以修改名單。</div>
+    <table><thead><tr><th>帳號</th><th>權限</th><th>備註</th><th></th></tr></thead><tbody id="aclBody"></tbody></table>
+    <div class="add">
+      <input id="aEmail" type="email" placeholder="輸入 Gmail，例如 someone@gmail.com">
+      <input id="aNote" placeholder="備註（可空白）" style="flex:.6">
+      <select id="aRole"><option value="view">觀看</option><option value="admin">管理</option></select>
+      <button class="primary" id="aAdd">加入</button>
+    </div>
+    <div id="aMsg" class="note" style="padding:8px 0 0"></div>
+    <div style="text-align:right;margin-top:10px"><a class="btn" id="aSheet" target="_blank" rel="noopener">開啟名單試算表</a> <button id="aClose">關閉</button></div>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const CFG = window.COURSE_CONFIG || {};
+const EPS = (window.EPISODES || []);
+let CAT = {}, ROLE = null, EMAIL = null, cur = null;
+let prog = { e: {}, last: null };          // e[代碼] = [秒數, 長度, 看完, 時間]
+const fmt = s => { s = Math.max(0, Math.floor(s || 0)); const m = Math.floor(s / 60); return m + ":" + String(s % 60).padStart(2, "0"); };
+const ready = e => !!CAT[e.code];
+const short = e => e.ep.split(" ")[1];
+const P = c => prog.e[c] || null;
+
+// ---------- 登入 ----------
+const TOKEN_KEY = "hydro-course-token";
+let token = null;
+function jwtPayload(t) { try { return JSON.parse(decodeURIComponent(escape(atob(t.split(".")[1].replace(/-/g, "+").replace(/_/g, "/"))))); } catch (e) { return {}; } }
+try { const t = JSON.parse(localStorage.getItem(TOKEN_KEY) || "null"); if (t && t.exp * 1000 > Date.now() + 60000) token = t.v; } catch (e) {}
+function setToken(t) { token = t; try { t ? localStorage.setItem(TOKEN_KEY, JSON.stringify({ v: t, exp: jwtPayload(t).exp })) : localStorage.removeItem(TOKEN_KEY); } catch (e) {} }
+function showLogin(msg) {
+  $("login").hidden = false; $("loginMsg").textContent = msg || "";
+  const go = () => {
+    if (!(window.google && google.accounts && google.accounts.id)) { setTimeout(go, 200); return; }
+    google.accounts.id.initialize({ client_id: CFG.CLIENT_ID, callback: r => { setToken(r.credential); $("login").hidden = true; boot(); }, auto_select: true, cancel_on_tap_outside: false });
+    $("gbtn").innerHTML = "";
+    google.accounts.id.renderButton($("gbtn"), { theme: "filled_blue", size: "large", text: "signin_with", shape: "pill", locale: "zh-TW" });
+    google.accounts.id.prompt();
+  };
+  go();
+}
+async function api(action, extra) {
+  if (!token || jwtPayload(token).exp * 1000 < Date.now() + 30000) { setToken(null); showLogin("登入已過期，請重新登入。"); throw new Error("請先登入"); }
+  const r = await fetch(CFG.API_URL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(Object.assign({ action, token }, extra || {})) });
+  const j = await r.json();
+  if (j.error === "TOKEN") { setToken(null); showLogin("登入已過期，請重新登入。"); throw new Error("登入已過期"); }
+  if (j.error === "NO_ACCESS") { setToken(null); try { google.accounts.id.disableAutoSelect(); } catch (e) {} showLogin(j.message); throw new Error(j.message); }
+  if (j.error) throw new Error(j.message || j.error);
+  return j;
+}
+$("logout").onclick = () => { setToken(null); try { google.accounts.id.disableAutoSelect(); } catch (e) {} location.reload(); };
+
+// ---------- 影片暫存（IndexedDB，最多保留 8 集） ----------
+const IDB = (() => {
+  let dbp = null;
+  const open = () => dbp || (dbp = new Promise((res, rej) => { const q = indexedDB.open("hydro-course", 1); q.onupgradeneeded = () => { q.result.createObjectStore("parts"); q.result.createObjectStore("meta"); }; q.onsuccess = () => res(q.result); q.onerror = () => rej(q.error); }));
+  const tx = async (store, mode, fn) => { const db = await open(); return new Promise((res, rej) => { const t = db.transaction(store, mode); const r = fn(t.objectStore(store)); t.oncomplete = () => res(r && r.result); t.onerror = () => rej(t.error); }); };
+  return {
+    get: (k) => tx("parts", "readonly", s => s.get(k)).catch(() => null),
+    put: (k, v) => tx("parts", "readwrite", s => s.put(v, k)).catch(() => null),
+    del: (k) => tx("parts", "readwrite", s => s.delete(k)).catch(() => null),
+    meta: (k, v) => v === undefined ? tx("meta", "readonly", s => s.get(k)).catch(() => null) : tx("meta", "readwrite", s => s.put(v, k)).catch(() => null),
+  };
+})();
+async function touchCache(code, n) {
+  const lru = (await IDB.meta("lru")) || [];
+  const list = [{ code, n }].concat(lru.filter(x => x.code !== code));
+  for (const old of list.slice(8)) for (let i = 0; i < old.n; i++) await IDB.del(old.code + ":" + i);
+  await IDB.meta("lru", list.slice(0, 8));
+}
+const b64ToBuf = b => { const s = atob(b); const u = new Uint8Array(s.length); for (let i = 0; i < s.length; i++) u[i] = s.charCodeAt(i); return u.buffer; };
+const keyOf = (code, i) => code + ":" + i + ":" + (CAT[code] ? CAT[code].size : 0);
+async function getPart(code, i) {
+  const k = keyOf(code, i);
+  const hit = await IDB.get(k);
+  if (hit) return hit;
+  let lastErr;
+  for (let tries = 0; tries < 3; tries++) {
+    try { const j = await api("part", { code, i }); const buf = b64ToBuf(j.b64); IDB.put(k, buf); return buf; }
+    catch (e) { lastErr = e; if (/登入|名單/.test(e.message)) throw e; await new Promise(r => setTimeout(r, 800 * (tries + 1))); }
+  }
+  throw lastErr;
+}
+// 同時抓最多 4 段，依序交給 onPart
+async function fetchAll(code, onPart, onProgress) {
+  const n = CAT[code].n; const bufs = new Array(n); let next = 0, done = 0, delivered = 0;
+  const deliver = () => { while (delivered < n && bufs[delivered]) { onPart(bufs[delivered], delivered); delivered++; } };
+  const worker = async () => { while (next < n) { const i = next++; bufs[i] = await getPart(code, i); done++; onProgress && onProgress(done, n); deliver(); } };
+  await Promise.all(Array.from({ length: Math.min(4, n) }, worker));
+  deliver();
+  touchCache(code, n);
+  return bufs;
+}
+let prefetching = null;
+function prefetchNext(e) {
+  const i = EPS.indexOf(e); const nx = EPS.slice(i + 1).find(ready);
+  if (!nx || prefetching === nx.code) return;
+  prefetching = nx.code;
+  setTimeout(() => fetchAll(nx.code, () => {}).catch(() => {}).finally(() => { prefetching = null; }), 3000);
+}
+
+// ---------- 播放 ----------
+const vid = $("vid");
+let loadId = 0, objUrl = null;
+function setLoading(on, text, pct) {
+  $("loading").hidden = !on;
+  if (text) $("ltext").textContent = text;
+  if (pct != null) $("lbar").style.width = Math.round(pct * 100) + "%";
+}
+async function loadVideo(e, startAt, autoplay) {
+  const my = ++loadId; const m = CAT[e.code];
+  if (objUrl) { URL.revokeObjectURL(objUrl); objUrl = null; }
+  vid.removeAttribute("src"); vid.load();
+  setLoading(true, "讀取影片中⋯⋯", 0);
+  const MS = window.ManagedMediaSource || window.MediaSource;
+  const canStream = MS && MS.isTypeSupported && MS.isTypeSupported(m.mime);
+  // 等續播位置的資料進來再跳過去，避免跳到還沒下載的地方
+  const seekWhenReady = () => {
+    const go = () => {
+      if (my !== loadId) return;
+      if (startAt > 5) { vid.currentTime = startAt; $("msg").textContent = "從上次看到的 " + fmt(startAt) + " 繼續播放"; } else $("msg").textContent = "";
+      vid.playbackRate = parseFloat($("speed").value);
+      if (autoplay) vid.play().catch(() => {});
+    };
+    if (startAt <= 5) return go();
+    const t0 = Date.now();
+    const check = () => {
+      if (my !== loadId) return;
+      const b = vid.buffered;
+      for (let k = 0; k < b.length; k++) if (b.start(k) <= startAt + 0.5 && b.end(k) >= Math.min(startAt + 2, (vid.duration || 1e9) - 0.1)) return go();
+      if (Date.now() - t0 > 60000) return go();
+      setTimeout(check, 250);
+    };
+    check();
+  };
+  try {
+    if (canStream) {
+      const ms = new MS(); objUrl = URL.createObjectURL(ms);
+      if (window.ManagedMediaSource && MS === window.ManagedMediaSource) vid.disableRemotePlayback = true;
+      vid.src = objUrl;
+      await new Promise(r => ms.addEventListener("sourceopen", r, { once: true }));
+      if (my !== loadId) return;
+      const sb = ms.addSourceBuffer(m.mime);
+      const queue = []; let finished = false;
+      const pump = () => {
+        if (my !== loadId || sb.updating) return;
+        if (queue.length) { try { sb.appendBuffer(queue.shift()); } catch (err) { console.error(err); } }
+        else if (finished && ms.readyState === "open") { try { ms.endOfStream(); } catch (err) {} }
+      };
+      sb.addEventListener("updateend", pump);
+      let started = false;
+      vid.addEventListener("loadedmetadata", () => { if (my === loadId && !started) { started = true; seekWhenReady(); } }, { once: true });
+      const neededPart = startAt > 5 ? Math.min(m.n - 1, Math.floor(startAt / ((m.minutes || 20) * 60) * m.n)) : 0;
+      await fetchAll(e.code, (buf, i) => { queue.push(buf); pump(); if (i >= neededPart) setLoading(false); }, (d, n) => { if (my === loadId) setLoading(!$("loading").hidden, `讀取影片中⋯⋯ ${d}/${n}`, d / n); });
+      finished = true; pump();
+    } else {
+      const bufs = await fetchAll(e.code, () => {}, (d, n) => { if (my === loadId) setLoading(true, `讀取影片中⋯⋯ ${d}/${n}`, d / n); });
+      if (my !== loadId) return;
+      objUrl = URL.createObjectURL(new Blob(bufs, { type: "video/mp4" }));
+      vid.src = objUrl;
+      vid.addEventListener("loadedmetadata", seekWhenReady, { once: true });
+    }
+    if (my === loadId) { setLoading(false); prefetchNext(e); }
+  } catch (err) {
+    if (my === loadId) { setLoading(false); $("msg").textContent = "影片讀取失敗：" + err.message + "（可以再點一次這一集重試）"; }
+  }
+}
+
+function openEp(e, play) {
+  if (!ready(e)) return;
+  if (cur && vid.currentTime > 0) { record(cur.code, vid.currentTime, vid.duration); flush(); }
+  cur = e;
+  try { if (location.hash !== "#" + e.code) history.replaceState(null, "", "#" + e.code); } catch (_) {}
+  $("empty").hidden = true; $("pbody").hidden = false;
+  $("ptag").textContent = `${e.subject}・${short(e)}`;
+  $("ptitle").textContent = e.topic; $("psum").textContent = e.summary;
+  $("handout").hidden = !CAT[e.code].handout;
+  const p = P(e.code);
+  $("mark").textContent = p && p[2] ? "取消看完" : "標記為看完";
+  const i = EPS.indexOf(e);
+  $("prev").disabled = !EPS.slice(0, i).some(ready);
+  $("next").disabled = !EPS.slice(i + 1).some(ready);
+  prog.last = e.code; dirty = true;
+  renderList();
+  if (window.innerWidth <= 900) $("player").scrollIntoView({ behavior: "smooth" });
+  const startAt = p && !p[2] && p[0] > 5 ? p[0] : 0;
+  loadVideo(e, startAt, play);
+}
+
+// ---------- 進度 ----------
+let dirty = false, writing = false, lastSave = 0;
+function record(code, t, d, done) {
+  if (!d || !isFinite(d)) return;
+  const p = P(code) || [0, 0, 0, 0];
+  const nd = done || p[2] || t >= d - 15 ? 1 : 0;
+  if (Math.abs(p[0] - t) < 1 && p[2] === nd) return;
+  prog.e[code] = [Math.floor(t), Math.floor(d), nd, Date.now()];
+  prog.last = code; dirty = true;
+}
+async function flush() {
+  if (!dirty || writing || !cur) return;
+  const p = P(cur.code); if (!p) return;
+  writing = true; dirty = false;
+  try { await api("save", { code: cur.code, t: p[0], d: p[1], done: !!p[2] }); } catch (e) { dirty = true; }
+  writing = false;
+}
+vid.addEventListener("timeupdate", () => {
+  if (!cur || !vid.duration) return;
+  record(cur.code, vid.currentTime, vid.duration);
+  if (Date.now() - lastSave > 20000) { lastSave = Date.now(); flush(); }
+});
+vid.addEventListener("pause", () => { if (cur && vid.duration) { record(cur.code, vid.currentTime, vid.duration); flush(); renderList(); } });
+vid.addEventListener("ended", () => { if (cur) { record(cur.code, vid.duration, vid.duration, true); flush(); renderList(); } });
+document.addEventListener("visibilitychange", () => { if (document.hidden && cur && vid.duration) { record(cur.code, vid.currentTime, vid.duration); flush(); } });
+
+// ---------- 清單 ----------
+function renderList() {
+  const subjects = [...new Set(EPS.map(e => e.subject))];
+  const box = $("list"); box.innerHTML = "";
+  const lastEp = prog.last && EPS.find(e => e.code === prog.last);
+  const openSubj = cur ? cur.subject : (lastEp ? lastEp.subject : subjects[0]);
+  for (const s of subjects) {
+    const list = EPS.filter(e => e.subject === s);
+    const nReady = list.filter(ready).length, nDone = list.filter(e => P(e.code) && P(e.code)[2]).length;
+    const sec = document.createElement("div"); sec.className = "subj" + (s === openSubj ? " open" : "");
+    const head = document.createElement("button");
+    head.innerHTML = `<span>${s}</span><span class="cnt">看完 ${nDone}／已上架 ${nReady}／共 ${list.length}</span>`;
+    head.onclick = () => sec.classList.toggle("open");
+    const wrap = document.createElement("div"); wrap.className = "eps";
+    for (const e of list) {
+      const p = P(e.code);
+      const b = document.createElement("button"); b.className = "ep" + (cur && cur.code === e.code ? " cur" : "");
+      b.disabled = !ready(e);
+      let st = ready(e) ? "" : "尚未上架";
+      if (p && p[2]) st = "✓ 看完"; else if (p && p[0] > 5) st = "看到 " + fmt(p[0]);
+      const pct = p && p[1] ? Math.min(100, Math.round(p[0] / p[1] * 100)) : 0;
+      b.innerHTML = `<div class="row"><span><span class="code">${short(e)}</span>${e.topic}</span><span class="st ${p && p[2] ? "done" : ""}">${st}</span></div>` +
+        (ready(e) && p ? `<div class="bar"><i style="width:${p[2] ? 100 : pct}%"></i></div>` : "");
+      b.onclick = () => openEp(e, true);
+      wrap.appendChild(b);
+    }
+    sec.appendChild(head); sec.appendChild(wrap); box.appendChild(sec);
+  }
+  const note = document.createElement("div"); note.className = "note";
+  note.textContent = "每晚自動新增 3 集。看到哪裡會自動記住，手機和電腦同步。看過的影片會暫存在這台裝置，重看不用再等。";
+  box.appendChild(note);
+  const total = EPS.filter(ready).length, done = EPS.filter(e => P(e.code) && P(e.code)[2]).length;
+  $("stat").textContent = `已上架 ${total}／${EPS.length} 集，已看完 ${done} 集`;
+  renderResume();
+}
+function renderResume() {
+  const e = prog.last && EPS.find(x => x.code === prog.last && ready(x));
+  if (!e || (cur && cur.code === e.code)) { $("resume").hidden = true; return; }
+  const p = P(e.code) || [0, 0, 0];
+  let target = e, label = "看到 " + fmt(p[0]);
+  if (p[2]) {
+    const nx = EPS.find(x => x.n > e.n && ready(x) && !(P(x.code) && P(x.code)[2]));
+    if (!nx) { $("resume").hidden = true; return; }
+    target = nx; label = "上一集已看完，接著看下一集";
+  }
+  $("resumeText").innerHTML = `${target.subject}・${short(target)}　${target.topic}<small>${label}</small>`;
+  $("resumeBtn").onclick = () => openEp(target, true);
+  $("resume").hidden = false;
+}
+
+// ---------- 按鈕 ----------
+function setTheater(on) { document.body.classList.toggle("theater", on); $("fs").textContent = on ? "離開大畫面" : "全螢幕"; }
+$("fs").onclick = async () => {
+  if (document.body.classList.contains("theater")) { setTheater(false); return; }
+  try {
+    if (vid.requestFullscreen) { await vid.requestFullscreen(); return; }
+    if (vid.webkitEnterFullscreen) { vid.webkitEnterFullscreen(); return; }
+    throw new Error("no fullscreen");
+  } catch (e) { setTheater(true); }
+};
+document.addEventListener("keydown", e => { if (e.key === "Escape" && document.body.classList.contains("theater")) setTheater(false); });
+vid.addEventListener("dblclick", () => $("fs").click());
+$("speed").onchange = () => { vid.playbackRate = parseFloat($("speed").value); };
+$("prev").onclick = () => { const i = EPS.indexOf(cur); const e = EPS.slice(0, i).reverse().find(ready); if (e) openEp(e, true); };
+$("next").onclick = () => { const i = EPS.indexOf(cur); const e = EPS.slice(i + 1).find(ready); if (e) openEp(e, true); };
+$("mark").onclick = () => {
+  if (!cur) return; const p = P(cur.code); const done = !(p && p[2]);
+  const d = Math.floor(vid.duration || (p && p[1]) || 0);
+  prog.e[cur.code] = [done ? d : 0, d, done ? 1 : 0, Date.now()];
+  dirty = true; flush(); renderList(); $("mark").textContent = done ? "取消看完" : "標記為看完";
+};
+$("handout").onclick = async () => {
+  if (!cur) return;
+  const w = window.open("", "_blank");
+  if (w) w.document.write("<p style='font-family:sans-serif'>講義讀取中⋯⋯</p>");
+  $("msg").textContent = "講義讀取中⋯⋯";
+  try {
+    const j = await api("handout", { code: cur.code });
+    const url = URL.createObjectURL(new Blob([b64ToBuf(j.b64)], { type: "application/pdf" }));
+    if (w) w.location.href = url; else { const a = document.createElement("a"); a.href = url; a.download = j.name; a.click(); }
+    $("msg").textContent = "";
+  } catch (e) { if (w) w.close(); $("msg").textContent = "講義讀取失敗：" + e.message; }
+};
+
+// ---------- 名單管理 ----------
+async function loadAcl() {
+  $("aMsg").textContent = "讀取中⋯⋯";
+  try { renderAcl(await api("aclList")); $("aMsg").textContent = ""; } catch (e) { $("aMsg").textContent = e.message; }
+}
+function renderAcl(j) {
+  $("aSheet").href = j.sheetUrl;
+  const tb = $("aclBody"); tb.innerHTML = "";
+  for (const r of j.rows) {
+    const tr = document.createElement("tr");
+    const isOwner = r.email === j.owner;
+    tr.innerHTML = `<td>${r.email}</td><td>${r.role === "admin" ? "管理" : "觀看"}</td><td>${r.note || ""}</td><td></td>`;
+    if (!isOwner) {
+      const b = document.createElement("button"); b.className = "link"; b.textContent = "移除";
+      b.onclick = async () => { if (!confirmBox(r.email)) return; try { renderAcl(await api("aclRemove", { email: r.email })); } catch (e) { $("aMsg").textContent = e.message; } };
+      tr.lastChild.appendChild(b);
+    }
+    tb.appendChild(tr);
+  }
+}
+let pendingRemove = null;
+function confirmBox(email) {
+  if (pendingRemove === email) { pendingRemove = null; return true; }
+  pendingRemove = email; $("aMsg").textContent = `再按一次「移除」確認移除 ${email}`; return false;
+}
+$("aAdd").onclick = async () => {
+  const email = $("aEmail").value.trim(); if (!email) return;
+  $("aMsg").textContent = "儲存中⋯⋯";
+  try { renderAcl(await api("aclSet", { email, role: $("aRole").value, note: $("aNote").value.trim() })); $("aEmail").value = ""; $("aNote").value = ""; $("aMsg").textContent = "已加入，對方重新整理後就能登入（最多等 5 分鐘）。"; }
+  catch (e) { $("aMsg").textContent = e.message; }
+};
+$("adminBtn").onclick = () => { $("admin").hidden = false; loadAcl(); };
+$("aClose").onclick = () => { $("admin").hidden = true; };
+
+// ---------- 啟動 ----------
+async function boot() {
+  if (!CFG.API_URL || /貼上/.test(CFG.API_URL)) { $("stat").textContent = "系統尚未設定：請在 config.js 填入後台網址。"; return; }
+  if (!token) { showLogin(); return; }
+  $("stat").textContent = "載入中⋯⋯";
+  try {
+    const j = await api("init");
+    CAT = j.catalog || {}; ROLE = j.role; EMAIL = j.email; prog = j.progress || prog;
+    $("who").textContent = EMAIL; $("logout").hidden = false; $("adminBtn").hidden = ROLE !== "admin";
+    renderList();
+    const h = location.hash.replace("#", "");
+    const e = h && EPS.find(x => x.code === h && ready(x));
+    if (e) openEp(e, false);
+  } catch (e) { $("stat").textContent = "載入失敗：" + e.message; }
+}
+renderList();
+boot();
+</script>
+</body>
+</html>
