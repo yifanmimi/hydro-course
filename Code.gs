@@ -18,6 +18,7 @@
  */
 
 const DEFAULT_ROOT_ID = '1XNElH8kTvjqaWYYNfazk7O2QXQgc1MeW';
+const DEFAULT_CLIENT_ID = '265991764431-7mv80vl7iighqahnbd1nihgpff50odf6.apps.googleusercontent.com';  // 與邊坡圖資共用
 const ACL_NAME = '水利課程白名單';
 const ROLE_LABEL = { view: '觀看', admin: '管理' };
 const props = PropertiesService.getScriptProperties();
@@ -26,6 +27,7 @@ const cache = CacheService.getScriptCache();
 /** 在編輯器執行一次：建立資料夾、白名單、每小時合併備份的觸發器 */
 function setup() {
   if (!props.getProperty('ROOT_ID')) props.setProperty('ROOT_ID', DEFAULT_ROOT_ID);
+  if (!props.getProperty('CLIENT_ID')) props.setProperty('CLIENT_ID', DEFAULT_CLIENT_ID);
   ['_影片分段', '_影片目錄', '影片備份'].forEach(sub_);
   Logger.log('課程資料夾：' + root_().getUrl());
   Logger.log('白名單：' + aclSheet_().getParent().getUrl());
